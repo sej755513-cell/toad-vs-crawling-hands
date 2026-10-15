@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toad vs. The Crawling Hands — Play (with init watchdog)</title>
+  <style>
+    html,body { height:100%; margin:0; background:#080810; }
+    #frameWrap { position:fixed; inset:0; display:flex; align-items:stretch; justify-content:center; }
+    iframe { border:0; width:min(960px,94vw); height:min(84vh,98vh); box-shadow:0 0 30px rgba(0,0,0,0.7); }
+    #errorOverlay {
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:9999; padding:20px; box-sizing:border-box;
+    }
+    .card { background:#1a1120; border:4px solid #ff4a4a; color:#fff; padding:18px; border-radius:10px; max-width:880px; width:100%; }
+    .row { display:flex; gap:12px; align-items:center; }
+    .left { flex:0 0 160px; }
+    .right { flex:1; }
+    .muted { opacity:0.9; font-size:13px }
+    button { background:#2a1d3c; border:2px solid #ff4a4a; color:#fff; padding:8px 12px; cursor:pointer; font-weight:700 }
+    .alt { background:#fff; color:#111; border:0 }
+  </style>
+</head>
+<body>
+  <div id="frameWrap">
+    <iframe id="gameFrame" src="/toad-vs-crawling-hands/index.html" title="Toad vs the Crawling Hands"></iframe>
+  </div>
+
+  <div id="errorOverlay" role="dialog" aria-modal="true">
+    <div class="card">
+      <div class="row">
+        <div class="left">
+          <img id="sadImg" src="https://static.wikia.nocookie.net/paper-shin-aka-keroro-gunsou/images/a/a7/Baby_Red_Toad_crying.png/revision/latest/scale-to-width-down/178?cb=20241125004049" alt="Sad Toad" style="width:140px;height:140px;object-fit:contain;border-radius:8px;background:#000" />
+        </div>
+        <div class="right">
+          <h2 style="margin:0 0 6px 0;color:#ffd06e">ERROR — CODE 100</h2>
+          <div class="muted">The game failed to initialize. This page watches the embedded game and shows this message if it doesn't create level data.</div>
+          <div style="margin:10px 0;">
+            <strong>Try these:</strong>
+            <ul style="margin:6px 0 0 18px;">
+              <li>Click Retry to reload the game frame and try again.</li>
+              <li>Open browser console (F12) and look for script errors in the embedded frame.</li>
+              <li>Click Force Start to attempt to call the game's start() / resetRun() functions.</li>
+            </ul>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button id="btnRetry">Retry</button>
+            <button id="btnForce" class="alt">Force Start</button>
+            <button id="btnClose">Close</button>
+          </div>
+          <div style="margin-top:10px;font-size:12px;opacity:0.9">If you have a local copy you can test with the console: in the frame's context run start() or resetRun().</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const iframe = document.getElementById('gameFrame');
+    const overlay = document.getElementById('errorOverlay');
+    const btnRetry = document.getElementById('btnRetry');
+    const btnForce = document.getElementById('btnForce');
+    const btnClose = document.getElementById('btnClose');
+
+    // Timeout before showing error overlay (ms)
+    const WATCH_TIMEOUT = 3000;
+
+    let watchTimer = null;
+
+    function checkFrameReady() {
+      try {
+        const win = iframe.contentWindow;
+        if (!win) return false;
+        // if levelObject exists and has platforms assume it's ready
+        if (win.levelObject && Array.isArray(win.levelObject.platforms) && win.levelObject.platforms.length > 0) return true;
+        // if game state playing
+        if (win.game && win.game.state === 'playing') return true;
+        return false;
+      } catch (e) {
+        // cross-origin would throw, but Pages same-origin so should be accessible
+        console.error('frame check error', e);
+        return false;
+      }
+    }
+
+    function onFrameMaybeReady() {
+      if (checkFrameReady()) {
+        hideOverlay();
+        clearTimeout(watchTimer);
+        watchTimer = setTimeout(() => { if (!checkFrameReady()) showOverlay(); }, WATCH_TIMEOUT);
+      } else {
+        // show overlay after timeout
+        showOverlayWithDelay(WATCH_TIMEOUT);
+      }
+    }
+
+    function showOverlayWithDelay(ms) {
+      clearTimeout(watchTimer);
+      watchTimer = setTimeout(() => {
+        if (!checkFrameReady()) overlay.style.display = 'flex';
+      }, ms);
+    }
+
+    function showOverlay() { overlay.style.display = 'flex'; }
+    function hideOverlay() { overlay.style.display = 'none'; }
+
+    iframe.addEventListener('load', () => {
+      // after iframe loads, wait a bit then check
+      try { hideOverlay(); } catch (e) {}
+      clearTimeout(watchTimer);
+      watchTimer = setTimeout(() => {
+        if (!checkFrameReady()) overlay.style.display = 'flex';
+      }, WATCH_TIMEOUT);
+    });
+
+    btnRetry.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      iframe.src = '/toad-vs-crawling-hands/index.html?retry=' + Date.now();
+    });
+
+    btnForce.addEventListener('click', () => {
+      try {
+        const win = iframe.contentWindow;
+        if (!win) return;
+        // attempt to auto-accept any modal
+        try { win.localStorage.setItem('toad_game_mature_ok','ok'); } catch(e){}
+        // try common start functions
+        if (typeof win.start === 'function') { win.start(); console.log('called start() in frame'); }
+        if (typeof win.resetRun === 'function') { win.resetRun(); console.log('called resetRun() in frame'); }
+        if (typeof win.loadLevel === 'function') {
+          if (!win.game) win.game = { map:0, level:1, lives:3, coins:0, state:'playing', timer:0 };
+          try { win.spawnPlayer && win.spawnPlayer(); } catch(e){}
+          win.loadLevel && win.loadLevel();
+        }
+      } catch (e) {
+        console.error('force start failed', e);
+      }
+      // after forcing, wait and then check
+      clearTimeout(watchTimer);
+      watchTimer = setTimeout(() => { if (!checkFrameReady()) overlay.style.display = 'flex'; else overlay.style.display = 'none'; }, 400);
+    });
+
+    btnClose.addEventListener('click', () => overlay.style.display = 'none');
+
+    // initial check in case iframe loaded already
+    setTimeout(onFrameMaybeReady, 600);
+  </script>
+</body>
+</html>
