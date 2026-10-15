@@ -3,115 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Toad vs. The Crawling Hands</title>
+  <title>Toad vs. The Crawling Hands 3D</title>
   <style>
-    :root{
+    :root {
       --bg1:#120c1d;
       --panel:#1f1530;
       --border:#ff4a4a;
       --accent:#ffdb4d;
       --text:#f4f7ff;
     }
-    *{box-sizing:border-box}
-    html,body{
-      margin:0; height:100%;
-      background:radial-gradient(circle at top,#2a1a3a 0%, var(--bg1) 52%, #080810 100%);
+    * { box-sizing: border-box; }
+    html, body {
+      margin:0; width:100%; height:100%;
+      background: radial-gradient(circle at top, #2a1a3a 0%, var(--bg1) 52%, #080810 100%);
       color:var(--text);
-      font-family:Segoe UI, system-ui, Arial, sans-serif;
+      font-family: Segoe UI, system-ui, Arial, sans-serif;
+      overflow:hidden;
     }
-    body{
-      display:flex; flex-direction:column; align-items:center; gap:12px;
-      padding:18px;
+    canvas {
+      display:block; width:100vw; height:100vh;
+      background:#0f1320;
     }
-    h1{
-      margin:0; font-size:clamp(20px, 3vw, 36px);
-      color:#ffe06e; text-shadow:3px 3px 0 #000;
-      letter-spacing:1px;
-    }
-    #topbar{
-      width:min(960px,94vw);
+    #hud {
+      position:fixed; top:14px; left:16px; right:16px; z-index:50;
       display:flex; justify-content:space-between; align-items:center; gap:12px;
+      pointer-events:none;
     }
-    #hud{
-      flex:1; background:rgba(27,22,38,0.85); border:3px solid var(--border);
-      padding:10px 20px; font-weight:700; letter-spacing:1px;
+    .box {
+      background: rgba(27,22,38,0.85); border:3px solid var(--border); padding:10px 18px;
+      font-weight:800; letter-spacing:1px; color:var(--text);
+      box-shadow:0 0 28px rgba(255,80,80,0.1);
     }
-    #menuBtn{
+    .title {
+      position:fixed; top:76px; left:50%; transform:translateX(-50%);
+      z-index:50; pointer-events:none;
+      color:#ffd34d; font-weight:900; font-size:clamp(24px, 3vw, 48px);
+      letter-spacing:2px; text-shadow: 3px 3px 0 #000;
+      text-align:center;
+      white-space:nowrap;
+    }
+    .controls {
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      z-index:50; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;
+      pointer-events:none;
+    }
+    .controls button {
+      pointer-events:auto;
       background:#2a1d3c; color:white; border:2px solid var(--border);
-      padding:8px 12px; cursor:pointer; font-weight:700;
+      padding:10px 18px; font-weight:900; cursor:pointer;
+      font-size:14px;
     }
-    canvas{
-      border:4px solid var(--border);
-      background:#14223a; width:min(94vw,960px); height:auto;
-      image-rendering:pixelated; box-shadow:0 0 28px rgba(255,80,80,0.18);
-    }
-    .controls{
-      display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; justify-content:center;
-    }
-    button{
+    .menu-btn {
+      pointer-events:auto;
       background:#2a1d3c; color:white; border:2px solid var(--border);
-      padding:10px 14px; cursor:pointer; font-weight:700;
+      padding:8px 14px; font-weight:800; cursor:pointer;
+      margin-left:auto;
+      margin-right:0;
     }
-    .small{
-      font-size:13px; opacity:0.85; text-align:center;
+    .overlay {
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.65); z-index:100;
     }
-    .panel-backdrop{
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,0.6); z-index:40;
+    .panel {
+      background:linear-gradient(180deg,#1d1730,#221436); border:3px solid var(--border); padding:18px; width:min(700px,90vw);
+      color:var(--text);
     }
-    .panel{
-      width:min(880px,92vw); max-height:86vh; overflow:auto;
-      background:linear-gradient(180deg,#1d1730,#221436);
-      border:3px solid var(--border); padding:16px; color:var(--text);
-    }
-    .panel h2{ margin:6px 0 10px 0; }
-    .row{ display:flex; gap:10px; align-items:center; margin:8px 0; flex-wrap:wrap; }
-    label{ font-weight:700; min-width:120px; }
-    input[type=range]{ width:160px; }
-    .muted{ opacity:0.85; font-size:13px; }
-    .version{
-      font-family:monospace; background:rgba(255,255,255,0.04);
-      padding:6px 8px; border-radius:6px; display:inline-block;
-    }
-    .log-entry{
-      background:rgba(255,255,255,0.02); border-left:3px solid rgba(255,255,255,0.04);
-      padding:8px; margin:6px 0;
-    }
-    .debug-box{
-      position:fixed; right:8px; top:8px;
-      background:rgba(0,0,0,0.6); padding:8px;
-      border:1px solid rgba(255,255,255,0.06);
-      font-family:monospace; font-size:12px; z-index:50; display:none;
-    }
-    #storeButton { position:fixed; left:14px; bottom:14px; z-index:9998; }
-    #storeOverlay {
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-      background:rgba(0,0,0,0.85); z-index:10000; padding:20px;
-    }
-    .storeCard{
-      background:#12101a; border:3px solid #ffd06e; color:#fff;
-      padding:16px; border-radius:10px; width:min(820px,92vw); max-height:86vh; overflow:auto;
-    }
-    .storeItem{
-      display:flex; justify-content:space-between; gap:12px; padding:10px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-    }
-    .itemMeta{ display:flex; gap:10px; align-items:center; }
-    .price{ font-weight:900; color:#ffd06e; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0; }
+    .muted { opacity:0.8; font-size:13px; }
+    .tiny { font-size:12px; }
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <div id="hud">MAP 1: MUSHROOM KINGDOM | LEVEL 1/20 | COINS 0 | LIVES 3</div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-      <div class="version" id="versionLabel">v1.2.0</div>
-      <button id="menuBtn">☰ Menu</button>
-    </div>
+  <div id="hud">
+    <div class="box" id="hudText">MAP 1: MUSHROOM KINGDOM | COINS 0 | LIVES 3</div>
+    <button class="menu-btn" id="menuBtn">☰ Menu</button>
   </div>
-
-  <h1>TOAD VS. THE CRAWLING HANDS</h1>
-
-  <canvas id="game" width="960" height="540"></canvas>
+  <div class="title">TOAD VS. THE CRAWLING HANDS</div>
 
   <div class="controls">
     <button id="leftBtn">◀ LEFT</button>
@@ -120,885 +86,526 @@
     <button id="resetBtn">RESTART</button>
   </div>
 
-  <div class="small">Move: A / D or ← / → • Jump: Space • Cheats: open Menu → Cheats or type secret codes</div>
-
-  <div class="panel-backdrop" id="panelBackdrop">
-    <div class="panel" role="dialog" aria-modal="true" aria-label="Game Menu">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <h2>Menu — Settings, Updates & Cheat Codes</h2>
-        <button id="closePanel">Close</button>
+  <div class="overlay" id="menuOverlay">
+    <div class="panel">
+      <h2 style="margin-top:0; color:#ffd34d;">Game Menu</h2>
+      <div class="row"><label>Difficulty</label>
+        <select id="difficultySelect">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
       </div>
-
-      <section>
-        <h3>Settings</h3>
-        <div class="row">
-          <label>Difficulty</label>
-          <select id="difficultySelect">
-            <option value="easy">Easy</option>
-            <option value="normal">Normal</option>
-            <option value="hard">Hard</option>
-          </select>
-          <div class="muted">Affects enemy speed and hazard frequency.</div>
-        </div>
-
-        <div class="row">
-          <label>Volume</label>
-          <input id="volumeRange" type="range" min="0" max="1" step="0.05" value="0.8">
-          <div class="muted">Placeholder audio volume value.</div>
-        </div>
-
-        <div class="row">
-          <label>Show FPS</label>
-          <input id="showFps" type="checkbox">
-          <label style="min-width:0">Debug Overlay</label>
-          <input id="debugOverlay" type="checkbox">
-        </div>
-
-        <div class="row">
-          <button id="resetProgress">Reset Progress</button>
-          <button id="exportSave">Export Save</button>
-          <button id="importSave">Import Save</button>
-        </div>
-      </section>
-
-      <section style="margin-top:12px">
-        <h3>Versions & Updates</h3>
-        <div class="row">
-          <label>Current</label>
-          <div id="currentVersion" class="version">v1.2.0</div>
-          <button id="checkUpdates">Check for updates</button>
-        </div>
-        <div id="changelog"></div>
-      </section>
-
-      <section style="margin-top:12px">
-        <h3>Cheat Codes</h3>
-        <div class="muted">Type codes here or directly during gameplay. Codes are case-insensitive.</div>
-        <div class="cheat-row">
-          <input id="cheatInput" placeholder="Enter code, e.g. 1UP or GODMODE" style="flex:1;padding:8px" />
-          <button id="applyCheat">Apply</button>
-        </div>
-        <div style="margin-top:8px;">
-          <strong>Available cheats:</strong> 1UP, GODMODE, NEXTLVL, COINS100, BOSSKILL, SKIPMAP, ALLMAPS, DEBUG
-        </div>
-        <div id="cheatLog" style="margin-top:8px; max-height:140px; overflow:auto"></div>
-      </section>
-
-      <footer style="margin-top:12px; display:flex;justify-content:space-between;align-items:center">
-        <div class="muted">Saved settings & progress stored in localStorage</div>
-        <div class="muted">Build: single-file HTML • 2026</div>
-      </footer>
+      <div class="row"><label>Show FPS</label><input id="showFps" type="checkbox" /></div>
+      <div class="row"><button id="resetProgressBtn">Reset Progress</button><button id="closeMenuBtn">Close</button></div>
+      <div class="muted tiny">Classic 3D prototype inspired by low-poly platformers.</div>
     </div>
   </div>
 
-  <div id="debugBox" class="debug-box"></div>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
-  <button id="storeButton">Open Superhand Store</button>
+    const hudText = document.getElementById('hudText');
+    const menuOverlay = document.getElementById('menuOverlay');
+    const showFpsBox = document.getElementById('showFps');
+    const difficultySelect = document.getElementById('difficultySelect');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const menuBtn = document.getElementById('menuBtn');
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    const resetProgressBtn = document.getElementById('resetProgressBtn');
 
-  <div id="storeOverlay">
-    <div class="storeCard">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h2 style="margin:0;color:#ffd06e">Superhand Store</h2>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="muted" id="storeCoins">Coins: 0</div>
-          <button id="closeStore">Close</button>
-        </div>
-      </div>
-      <div style="margin-bottom:10px;color:#ddd">
-        Buy items with in-game coins, or buy 100 coins for $2.99 (simulated demo).
-      </div>
-      <div id="itemsList"></div>
-      <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.04);padding-top:12px;display:flex;gap:8px;align-items:center;">
-        <button id="buyCoinsBtn">Buy 100 coins — $2.99</button>
-        <button id="earnInfo" class="alt" style="background:#fff;color:#111;border:0;">How to earn coins</button>
-      </div>
-    </div>
-  </div>
+    const SAVE_KEY = 'toad-vs-hands-3d-save-v1';
+    const SETTINGS_KEY = 'toad-vs-hands-3d-settings-v1';
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const hud = document.getElementById("hud");
-    const versionLabel = document.getElementById("versionLabel");
-    const panelBackdrop = document.getElementById("panelBackdrop");
-    const menuBtn = document.getElementById("menuBtn");
-    const closePanel = document.getElementById("closePanel");
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
 
-    const SAVE_KEY = "toad-vs-hands-save-v1";
-    const SETTINGS_KEY = "toad-vs-hands-settings-v1";
-    const LEVEL_COUNTER_KEY = "toad-vs-hands-levels-3";
-    const CURRENT_VERSION = "1.2.0";
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0d132a);
+    scene.fog = new THREE.Fog(0x0d132a, 10, 60);
 
-    const MAP_NAMES = ["MUSHROOM KINGDOM","DESERT RUINS","ICE PEAKS","VOLCANO CORE","BOWSER'S CASTLE"];
-    const mapPalettes = [
-      { sky:"#7bd3ff", ground:"#5e8148", platform:"#9a5a2a", accent:"#6ee56e", bgDark:"#1c2d44" },
-      { sky:"#f0c47b", ground:"#9a6b2a", platform:"#cf8a3b", accent:"#f4d24e", bgDark:"#4a2c1a" },
-      { sky:"#d8f1ff", ground:"#a2d9ff", platform:"#d8f4ff", accent:"#8ae6ff", bgDark:"#5177a4" },
-      { sky:"#ffb280", ground:"#5b1f1f", platform:"#d44f2b", accent:"#ffd551", bgDark:"#2f0b0b" },
-      { sky:"#2d1832", ground:"#3a2f4d", platform:"#57475c", accent:"#ff5c5c", bgDark:"#150a1d" }
-    ];
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 4, 12);
 
-    const keys = {};
-    let game = null;
-    let player = null;
-    let levelObject = null;
-    let lastTime = 0;
-    let totalFrames = 0;
-    let fps = 0;
+    const hemi = new THREE.HemisphereLight(0xbfe8ff, 0x1a1a2a, 1.2);
+    scene.add(hemi);
 
-    const defaultSettings = {
-      difficulty:"normal",
-      volume:0.8,
-      showFps:false,
-      debugOverlay:false,
-      cheats:{ godmode:false }
+    const sun = new THREE.DirectionalLight(0xffffff, 1.3);
+    sun.position.set(8, 18, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -30;
+    sun.shadow.camera.right = 30;
+    sun.shadow.camera.top = 30;
+    sun.shadow.camera.bottom = -30;
+    scene.add(sun);
+
+    const world = {
+      platforms: [],
+      coins: [],
+      boss: null,
+      level: 1,
+      map: 0,
+      lives: 3,
+      coinsCollected: 0,
+      win: false,
+      timer: 0,
+      difficulty: 'normal',
+      showFps: false,
+      keys: {},
+      lastTime: 0,
+      fps: 0
+    };
+
+    const player = {
+      mesh: null,
+      velocity: new THREE.Vector3(),
+      radius: 0.75,
+      height: 1.8,
+      baseY: 1.8,
+      onGround: false,
+      jumpQueued: false,
+      invuln: 0,
+      speed: 9.5,
+      jumpForce: 11.5
     };
 
     function loadSettings() {
       try {
         const raw = localStorage.getItem(SETTINGS_KEY);
-        return raw ? Object.assign({}, defaultSettings, JSON.parse(raw)) : {...defaultSettings};
+        return raw ? Object.assign({ difficulty:'normal', showFps:false }, JSON.parse(raw)) : { difficulty:'normal', showFps:false };
       } catch {
-        return {...defaultSettings};
+        return { difficulty:'normal', showFps:false };
       }
     }
 
-    function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ difficulty: world.difficulty, showFps: world.showFps }));
+    }
 
     function loadProgress() {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) return { map:0, level:1, lives:3, coins:0 };
       try {
-        const p = JSON.parse(raw);
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return { map:0, level:1, lives:3, coinsCollected:0 };
+        const parsed = JSON.parse(raw);
         return {
-          map: Number(p.map) || 0,
-          level: Number(p.level) || 1,
-          lives: Number(p.lives) || 3,
-          coins: Number(p.coins) || 0
+          map: Number(parsed.map) || 0,
+          level: Number(parsed.level) || 1,
+          lives: Number(parsed.lives) || 3,
+          coinsCollected: Number(parsed.coinsCollected) || 0
         };
-      } catch { return { map:0, level:1, lives:3, coins:0 }; }
+      } catch {
+        return { map:0, level:1, lives:3, coinsCollected:0 };
+      }
     }
 
     function saveProgress() {
-      if (!game) return;
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        map: game.map,
-        level: game.level,
-        lives: game.lives,
-        coins: game.coins
+        map: world.map,
+        level: world.level,
+        lives: world.lives,
+        coinsCollected: world.coinsCollected
       }));
     }
 
-    let settings = loadSettings();
+    const saved = loadProgress();
+    world.map = saved.map;
+    world.level = saved.level;
+    world.lives = saved.lives;
+    world.coinsCollected = saved.coinsCollected;
 
-    function clamp(v, min, max){ return Math.min(Math.max(v, min), max); }
+    const settings = loadSettings();
+    world.difficulty = settings.difficulty || 'normal';
+    world.showFps = !!settings.showFps;
+    difficultySelect.value = world.difficulty;
+    showFpsBox.checked = world.showFps;
 
-    function rectsOverlap(a, b) {
-      return a.x < b.x + b.w && a.x + a.w > b.x &&
-             a.y < b.y + b.h && a.y + a.h > b.y;
+    function setHud() {
+      hudText.textContent = `MAP ${world.map + 1}: MUSHROOM KINGDOM | COINS ${world.coinsCollected} | LIVES ${world.lives}`;
+    }
+    setHud();
+
+    function makePlayer() {
+      const group = new THREE.Group();
+
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x45c8ff, roughness: 0.7, metalness: 0.15 });
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.1, 4, 8), bodyMat);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      body.position.y = 1.1;
+      group.add(body);
+
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.48, 20, 20), new THREE.MeshStandardMaterial({ color: 0xf7d9a3, roughness: 0.9 }));
+      head.position.y = 2.2;
+      head.castShadow = true;
+      group.add(head);
+
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive:0x111111 });
+      const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), eyeMat);
+      const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), eyeMat);
+      eye1.position.set(-0.14, 2.33, 0.42);
+      eye2.position.set(0.14, 2.33, 0.42);
+      group.add(eye1, eye2);
+
+      const hat = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.6, 16), new THREE.MeshStandardMaterial({ color: 0xffd34d }));
+      hat.position.y = 2.78;
+      hat.castShadow = true;
+      group.add(hat);
+
+      group.position.set(0, 2, 0);
+      scene.add(group);
+      player.mesh = group;
     }
 
-    function updateHud() {
-      if (!game) return;
-      hud.textContent = `MAP ${game.map + 1}: ${MAP_NAMES[game.map]} | LEVEL ${game.level}/20 | COINS ${game.coins} | LIVES ${game.lives}`;
-      versionLabel.textContent = "v" + CURRENT_VERSION;
+    function makePlatform(x, y, z, sx, sy, sz, color = 0x5f7d32) {
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0.08 });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      world.platforms.push({ mesh, x, y, z, sx, sy, sz, minX:x-sx/2, maxX:x+sx/2, minY:y-sy/2, maxY:y+sy/2, minZ:z-sz/2, maxZ:z+sz/2 });
     }
 
-    function applyDifficultyToGame() {
-      if (!game) return;
-      if (settings.difficulty === "easy") game.difficultyMultiplier = 0.8;
-      else if (settings.difficulty === "hard") game.difficultyMultiplier = 1.3;
-      else game.difficultyMultiplier = 1.0;
+    function makeGround() {
+      const ground = new THREE.Mesh(
+        new THREE.BoxGeometry(60, 2, 60),
+        new THREE.MeshStandardMaterial({ color: 0x2b3f59, roughness: 0.95 })
+      );
+      ground.position.set(0, -1, 0);
+      ground.castShadow = false;
+      ground.receiveShadow = true;
+      scene.add(ground);
+      world.platforms.push({ mesh: ground, x:0, y:-1, z:0, sx:60, sy:2, sz:60, minX:-30, maxX:30, minY:-2, maxY:0, minZ:-30, maxZ:30 });
     }
 
-    function spawnPlayer() {
-      player = {
-        x:50, y:420, w:28, h:34,
-        vx:0, vy:0, grounded:false, facing:1, invuln:0,
-        hasSword:false, hasShield:false, canDoubleJump:false, usedDoubleJump:false
+    function makeCoin(x, y, z) {
+      const coin = new THREE.Mesh(
+        new THREE.TorusGeometry(0.48, 0.16, 12, 22),
+        new THREE.MeshStandardMaterial({ color: 0xffd34d, emissive: 0x6a5200, metalness: 0.5, roughness: 0.35 })
+      );
+      coin.rotation.x = Math.PI / 2;
+      coin.position.set(x, y, z);
+      coin.castShadow = true;
+      scene.add(coin);
+      world.coins.push({ mesh: coin, x, y, z, collected: false });
+    }
+
+    function makeBoss() {
+      const boss = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 2.4, 2.4),
+        new THREE.MeshStandardMaterial({ color: 0xff4a4a, emissive: 0x3d0000, roughness: 0.5 })
+      );
+      boss.position.set(18, 1.8, 0);
+      boss.castShadow = true;
+      scene.add(boss);
+      world.boss = { mesh: boss, hp: 4, maxHp: 4, alive: true };
+    }
+
+    function levelLayout() {
+      makeGround();
+      makePlatform(0, 1.5, 0, 6, 0.8, 6, 0x6c8e3d);
+      makePlatform(-6, 3.2, -2, 5, 0.8, 5, 0x7a4d1f);
+      makePlatform(6, 4.4, 2, 5, 0.8, 5, 0x7a4d1f);
+      makePlatform(0, 6.4, -5, 6, 0.8, 5, 0x8a6a29);
+      makePlatform(12, 7.8, 0, 5.5, 0.8, 5.5, 0x8c5631);
+      makePlatform(19, 3.8, -3, 5, 0.8, 5, 0x718b42);
+      makePlatform(16, 1.5, 8, 11, 0.8, 5, 0x4d6b2a);
+      makePlatform(0, 2.8, 8, 5, 0.8, 5, 0x7d6b2a);
+      for (let i = 0; i < 12; i++) {
+        const x = -18 + i * 3.4;
+        const y = 1.2 + (i % 3) * 0.9;
+        const z = (i % 2 === 0 ? -6 : 7) + (i % 4) * 0.7;
+        makePlatform(x, y, z, 2.4, 0.5, 2.4, 0x7d9350);
+      }
+      for (let i = -2; i <= 2; i++) {
+        makeCoin(i * 3, 2.7 + (Math.abs(i) * 0.5), 4.2);
+      }
+      makeCoin(-7.2, 5.0, -1.6);
+      makeCoin(7.0, 5.7, 3.2);
+      makeCoin(0, 8.0, -5.2);
+      makeCoin(12.5, 9.0, 0.7);
+      makeCoin(19.0, 5.3, -3.2);
+      makeBoss();
+    }
+
+    function resetWorld() {
+      // Clear previous platform/coin meshes from scene
+      world.platforms.forEach(p => scene.remove(p.mesh));
+      world.coins.forEach(c => scene.remove(c.mesh));
+      if (world.boss) scene.remove(world.boss.mesh);
+      world.platforms = [];
+      world.coins = [];
+      world.boss = null;
+      levelLayout();
+      if (player.mesh) {
+        player.mesh.position.set(0, 2, 0);
+        player.mesh.rotation.set(0, 0, 0);
+      }
+      player.velocity.set(0, 0, 0);
+      player.onGround = false;
+      player.invuln = 0;
+      setHud();
+    }
+
+    function setDifficulty(value) {
+      world.difficulty = value;
+      switch (value) {
+        case 'easy': player.speed = 10.6; player.jumpForce = 12.5; break;
+        case 'hard': player.speed = 8.4; player.jumpForce = 10.8; break;
+        default: player.speed = 9.5; player.jumpForce = 11.5; break;
+      }
+      saveSettings();
+    }
+
+    function tryJump() {
+      if (!player.mesh) return;
+      if (player.onGround) {
+        player.velocity.y = player.jumpForce;
+        player.onGround = false;
+      }
+    }
+
+    function getPlayerAABB() {
+      return {
+        minX: player.mesh.position.x - player.radius,
+        maxX: player.mesh.position.x + player.radius,
+        minY: player.mesh.position.y - player.height * 0.5,
+        maxY: player.mesh.position.y + player.height * 0.5,
+        minZ: player.mesh.position.z - player.radius,
+        maxZ: player.mesh.position.z + player.radius
       };
     }
 
-    function jump() {
-      if (!player || game.state !== "playing") return;
-      if (player.grounded) {
-        player.vy = -11.5;
-        player.grounded = false;
-      } else if (player.canDoubleJump && !player.usedDoubleJump) {
-        player.vy = -10.5;
-        player.usedDoubleJump = true;
-      }
-    }
+    function updatePlayer(dt) {
+      if (!player.mesh) return;
+      const move = new THREE.Vector3();
 
-    function loadLevel() {
-      const mapIndex = game.map;
-      const levelNum = game.level;
-      const palette = mapPalettes[mapIndex] || mapPalettes[0];
-      const ground = { x:0, y:500, w:960, h:40, type:"ground" };
+      if (world.keys['KeyA'] || world.keys['ArrowLeft']) move.x -= 1;
+      if (world.keys['KeyD'] || world.keys['ArrowRight']) move.x += 1;
+      if (world.keys['KeyW'] || world.keys['ArrowUp']) move.z -= 1;
+      if (world.keys['KeyS'] || world.keys['ArrowDown']) move.z += 1;
 
-      const templates = [
-        [140,420,170,18], [350,360,150,18], [540,310,150,18], [710,250,140,18],
-        [270,260,120,18], [460,200,120,18], [640,180,130,18], [200,150,120,18]
-      ];
-      const variation = [[0,0],[20,-15],[-20,15],[35,-25],[-35,15],[50,-10],[-50,8],[10,-25]];
-      const seed = mapIndex * 20 + levelNum;
+      if (move.lengthSq() > 0) move.normalize();
+      const forward = new THREE.Vector3(0, 0, -1);
+      const right = new THREE.Vector3(1, 0, 0);
+      const targetVel = new THREE.Vector3();
+      targetVel.addScaledVector(right, move.x * player.speed);
+      targetVel.addScaledVector(forward, move.z * player.speed);
 
-      let platforms = [ground];
-      for (let i = 0; i < templates.length; i++) {
-        const t = templates[i];
-        const v = variation[(i + seed) % variation.length];
-        platforms.push({
-          x: clamp(t[0] + v[0], 0, 920),
-          y: clamp(t[1] + v[1], 90, 460),
-          w: t[2], h: t[3], type: "solid"
-        });
-      }
+      player.velocity.x = THREE.MathUtils.lerp(player.velocity.x, targetVel.x, 0.15);
+      player.velocity.z = THREE.MathUtils.lerp(player.velocity.z, targetVel.z, 0.15);
+      player.velocity.y -= 28 * dt;
 
-      let extras = 2 + (levelNum % 3);
-      for (let i = 0; i < extras; i++) {
-        const x = 100 + ((i * 157 + seed * 17) % 700);
-        const y = 100 + ((i * 71 + seed * 11) % 260);
-        platforms.push({
-          x: clamp(x, 30, 820),
-          y: clamp(y, 100, 420),
-          w: 110 + ((seed + i) % 60),
-          h: 16,
-          type: "solid"
-        });
-      }
+      const nextPos = player.mesh.position.clone();
+      nextPos.x += player.velocity.x * dt;
+      nextPos.z += player.velocity.z * dt;
+      nextPos.y += player.velocity.y * dt;
 
-      const hands = [];
-      const baseConfigs = [
-        {mode:"leftWall", speed:1.1, off:0},
-        {mode:"rightWall", speed:1.5, off:1.4},
-        {mode:"ceiling", speed:1.2, off:0.8},
-        {mode:"ceiling", speed:1.8, off:2.1}
-      ];
-      const diffMulti = game.difficultyMultiplier || 1;
-      const handCount = Math.min(2 + Math.floor(levelNum / 5), baseConfigs.length + Math.floor((levelNum - 1) / 7));
+      const oldY = player.mesh.position.y;
+      player.mesh.position.x = nextPos.x;
+      player.mesh.position.z = nextPos.z;
+      player.mesh.position.y = nextPos.y;
 
-      for (let i = 0; i < handCount; i++) {
-        const cfg = baseConfigs[(i + seed) % baseConfigs.length];
-        hands.push({
-          id:i, mode:cfg.mode,
-          x:0, y:0, w:28, h:26,
-          speed:(cfg.speed + levelNum * 0.02) * diffMulti,
-          dir:(i % 2 === 0) ? 1 : -1,
-          phase:i * 1.6 + cfg.off,
-          t:i * 30
-        });
-      }
-
-      const fists = [];
-      const fistCount = settings.difficulty === "easy" ? 1 :
-        settings.difficulty === "hard" ? 2 + Math.floor(levelNum / 6) :
-        1 + Math.floor(levelNum / 6);
-
-      for (let i = 0; i < fistCount; i++) {
-        fists.push({
-          x:170 + i * 250 + (seed % 70),
-          y:-80, w:44, h:44,
-          active:false,
-          cooldown:60 + i * 50 + (seed % 100) - ((settings.difficulty === "hard") ? 30 : 0)
-        });
-      }
-
-      let boss = null;
-      if (mapIndex === 4 && levelNum === 20) {
-        boss = {
-          x:680, y:240, w:100, h:90,
-          hp:8, maxHp:8, vx:1.8,
-          attackTimer:100, hitFlash:0,
-          active:true
+      player.onGround = false;
+      for (const platform of world.platforms) {
+        const pad = 0.25;
+        const box = {
+          minX: platform.minX - player.radius,
+          maxX: platform.maxX + player.radius,
+          minY: platform.minY - player.height * 0.5,
+          maxY: platform.maxY + player.height * 0.5,
+          minZ: platform.minZ - player.radius,
+          maxZ: platform.maxZ + player.radius
         };
-      }
 
-      player.x = 50; player.y = 430; player.vx = 0; player.vy = 0; player.grounded = false; player.invuln = settings.cheats.godmode ? 999999 : 0; player.usedDoubleJump = false;
+        const insideX = player.mesh.position.x > box.minX && player.mesh.position.x < box.maxX;
+        const insideZ = player.mesh.position.z > box.minZ && player.mesh.position.z < box.maxZ;
+        const insideY = player.mesh.position.y > box.minY && player.mesh.position.y < box.maxY;
 
-      levelObject = {
-        platforms, hands, fists, goal:{ x:900, y:280, w:32, h:54 }, boss, palette, mapIndex, levelNum
-      };
-      game.state = "playing";
-      updateHud();
-    }
-
-    function resetRun() {
-      const saved = loadProgress();
-      game = {
-        map:saved.map || 0,
-        level:saved.level || 1,
-        lives:saved.lives || 3,
-        coins:saved.coins || 0,
-        state:"playing",
-        timer:0
-      };
-      applyDifficultyToGame();
-      spawnPlayer();
-      loadLevel();
-      updateHud();
-      saveProgress();
-    }
-
-    function damagePlayer() {
-      if (!player || player.invuln > 0 || game.state !== "playing") return;
-      if (settings.cheats.godmode) return;
-      game.lives -= 1;
-      player.invuln = 90;
-      player.x = 50; player.y = 420; player.vx = 0; player.vy = 0;
-      updateHud();
-      if (game.lives <= 0) {
-        game.state = "gameover";
-        saveProgress();
-      }
-    }
-
-    function awardLevelCoins() {
-      const levelsCompleted = Number(localStorage.getItem(LEVEL_COUNTER_KEY)) || 0;
-      const nextValue = levelsCompleted + 1;
-      localStorage.setItem(LEVEL_COUNTER_KEY, String(nextValue));
-      if (nextValue >= 3) {
-        game.coins += 100;
-        localStorage.setItem(LEVEL_COUNTER_KEY, "0");
-        alert("Congrats! You completed 3 levels and earned 100 coins.");
-      }
-      updateHud();
-    }
-
-    function progressToNextLevel() {
-      game.coins += 5;
-      game.level += 1;
-
-      if (game.level > 20) {
-        game.level = 1;
-        game.map += 1;
-      }
-
-      if (game.map >= MAP_NAMES.length) {
-        game.state = "victory";
-        saveProgress();
-        return;
-      }
-
-      saveProgress();
-      awardLevelCoins();
-      loadLevel();
-    }
-
-    function reanimateHands() {
-      if (!levelObject || !levelObject.hands) return;
-      for (const hand of levelObject.hands) {
-        const drift = Math.sin((game.timer + hand.t) * 0.04 + hand.phase);
-        switch (hand.mode) {
-          case "leftWall":
-            hand.x = 28 + drift * 40;
-            hand.y += hand.speed * hand.dir * 1.2;
-            if (hand.y < 30 || hand.y > 440) hand.dir *= -1;
-            break;
-          case "rightWall":
-            hand.x = canvas.width - 52 + drift * 38;
-            hand.y += hand.speed * hand.dir * 1.5;
-            if (hand.y < 30 || hand.y > 440) hand.dir *= -1;
-            break;
-          case "ceiling":
-            hand.y = 25 + drift * 30;
-            hand.x += hand.speed * hand.dir * 1.8;
-            if (hand.x < 40 || hand.x > canvas.width - 70) hand.dir *= -1;
-            break;
-        }
-      }
-    }
-
-    function updateFists() {
-      if (!levelObject || !levelObject.fists) return;
-      const difficultyAdjustment = settings.difficulty === "hard" ? 0.8 : settings.difficulty === "easy" ? 1.3 : 1.0;
-
-      for (const fist of levelObject.fists) {
-        fist.cooldown -= 1 * (1 / difficultyAdjustment);
-        if (!fist.active && fist.cooldown <= 0) {
-          fist.active = true;
-          fist.y = -70;
-          fist.x = 120 + ((Math.random() * 620) | 0);
-        }
-        if (fist.active) {
-          fist.y += 8.5;
-          if (fist.y > 500) {
-            fist.active = false;
-            fist.cooldown = 120 + Math.random() * 180;
+        if (insideX && insideZ && insideY) {
+          const prevBottom = oldY - player.height * 0.5;
+          const currentBottom = player.mesh.position.y - player.height * 0.5;
+          const platformTop = platform.maxY + 0.1;
+          if (prevBottom >= platformTop - 0.5 && currentBottom <= platformTop) {
+            player.mesh.position.y = platform.maxY + player.height * 0.5 + 0.06;
+            player.velocity.y = 0;
+            player.onGround = true;
           }
-          if (rectsOverlap(player, fist)) damagePlayer();
-        }
-      }
-    }
-
-    function updateBoss() {
-      const boss = levelObject && levelObject.boss;
-      if (!boss) return;
-      boss.hitFlash = Math.max(0, boss.hitFlash - 1);
-      boss.attackTimer -= 1;
-      boss.x += boss.vx;
-
-      if (boss.x < 400 || boss.x > 820) boss.vx *= -1;
-
-      if (boss.attackTimer <= 0) {
-        const slamX = boss.x + boss.w / 2 + (Math.random() * 120 - 60);
-        boss.attackTimer = 80 + Math.random() * 75;
-        boss.slamX = slamX;
-        boss.slamY = -40;
-      }
-
-      if (boss.slamX !== undefined) {
-        boss.slamY += 9;
-        if (boss.slamY > 520) {
-          boss.slamX = undefined;
-          boss.slamY = undefined;
-        } else if (rectsOverlap(player, { x: boss.slamX - 25, y: boss.slamY, w:50, h:42 })) {
-          damagePlayer();
-          boss.slamX = undefined;
-          boss.slamY = undefined;
         }
       }
 
-      if (rectsOverlap(player, boss)) damagePlayer();
+      if (player.mesh.position.y < -8) {
+        player.mesh.position.set(0, 2, 0);
+        player.velocity.set(0, 0, 0);
+        world.lives -= 1;
+        if (world.lives <= 0) {
+          world.lives = 3;
+          world.coinsCollected = 0;
+        }
+        setHud();
+        saveProgress();
+      }
 
-      const playerBottom = player.y + player.h;
-      const bossTop = boss.y;
-      const insideX = player.x + player.w > boss.x && player.x < boss.x + boss.w;
-      const descending = player.vy > 0;
+      for (const coin of world.coins) {
+        if (!coin.collected) {
+          const dx = player.mesh.position.x - coin.x;
+          const dy = player.mesh.position.y - coin.y;
+          const dz = player.mesh.position.z - coin.z;
+          if (Math.hypot(dx, dy, dz) < 1.2) {
+            coin.collected = true;
+            coin.mesh.visible = false;
+            world.coinsCollected += 1;
+            setHud();
+            saveProgress();
+          }
+        }
+      }
 
-      if (descending && insideX && playerBottom >= bossTop && player.y < bossTop + 10) {
-        boss.hp -= 1;
-        boss.hitFlash = 10;
-        player.vy = -9.5;
-
-        if (boss.hp <= 0) {
-          game.state = "victory";
+      if (world.boss && world.boss.alive) {
+        const dist = player.mesh.position.distanceTo(world.boss.mesh.position);
+        if (dist < 1.8) {
+          if (player.mesh.position.y > world.boss.mesh.position.y + 1.2 && player.velocity.y < 0) {
+            world.boss.hp -= 1;
+            player.velocity.y = 7.5;
+            if (world.boss.hp <= 0) {
+              world.boss.alive = false;
+              world.boss.mesh.visible = false;
+              world.win = true;
+            }
+          } else {
+            player.mesh.position.set(0, 2, 0);
+            world.lives -= 1;
+            if (world.lives <= 0) {
+              world.lives = 3;
+              world.coinsCollected = 0;
+            }
+          }
+          setHud();
           saveProgress();
         }
       }
+
+      const facing = new THREE.Vector3(player.velocity.x, 0, player.velocity.z);
+      if (facing.lengthSq() > 0.001) {
+        player.mesh.rotation.y = Math.atan2(facing.x, facing.z) + Math.PI;
+      }
     }
 
-    function updatePlayer() {
-      if (!player || game.state !== "playing") return;
+    function updateCamera(dt) {
+      const focus = player.mesh.position.clone();
+      const desired = new THREE.Vector3(focus.x, focus.y + 3.8, focus.z + 9.2);
+      camera.position.lerp(desired, 0.08);
+      camera.lookAt(focus.x, focus.y + 1.4, focus.z);
+    }
 
-      const left = keys["a"] || keys["arrowleft"];
-      const right = keys["d"] || keys["arrowright"];
-      const accel = 0.8;
+    function animate() {
+      requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = Math.min((now - (world.lastTime || now)) / 1000, 0.033);
+      world.lastTime = now;
+      world.timer += dt;
 
-      if (left && !right) { player.vx -= accel; player.facing = -1; }
-      else if (right && !left) { player.vx += accel; player.facing = 1; }
-      else player.vx *= 0.76;
+      if (player.mesh) updatePlayer(dt);
+      updateCamera(dt);
 
-      player.vx = clamp(player.vx, -4.5, 4.5);
-      player.vy += 0.6;
-      player.vy = clamp(player.vy, -18, 14);
+      if (world.boss && world.boss.alive) {
+        world.boss.mesh.position.y = 1.8 + Math.sin(world.timer * 2.5) * 0.25;
+      }
 
-      player.x += player.vx;
-      for (const p of levelObject.platforms) {
-        if (p.w <= 0) continue;
-        if (rectsOverlap(player, p)) {
-          if (player.vx > 0) player.x = p.x - player.w;
-          else if (player.vx < 0) player.x = p.x + p.w;
-          player.vx = 0;
+      renderer.render(scene, camera);
+
+      if (world.showFps) {
+        world.fps = 1 / Math.max(dt, 0.001);
+        const fpsText = document.createElement('div');
+        fpsText.id = 'fpsOverlay';
+        if (!document.getElementById('fpsOverlay')) {
+          fpsText.style.position = 'fixed';
+          fpsText.style.right = '14px';
+          fpsText.style.top = '14px';
+          fpsText.style.zIndex = '90';
+          fpsText.style.background = 'rgba(0,0,0,0.5)';
+          fpsText.style.padding = '8px 10px';
+          fpsText.style.border = '1px solid rgba(255,255,255,0.2)';
+          fpsText.style.fontFamily = 'monospace';
+          fpsText.style.fontSize = '12px';
+          fpsText.style.color = '#fff';
+          document.body.appendChild(fpsText);
         }
-      }
-
-      player.y += player.vy;
-      player.grounded = false;
-      for (const p of levelObject.platforms) {
-        if (p.w <= 0) continue;
-        if (rectsOverlap(player, p)) {
-          if (player.vy > 0) { player.y = p.y - player.h; player.vy = 0; player.grounded = true; }
-          else if (player.vy < 0) { player.y = p.y + p.h; player.vy = 0; }
-        }
-      }
-
-      player.x = clamp(player.x, 0, canvas.width - player.w);
-      if (player.y > canvas.height + 80) damagePlayer();
-
-      for (const hand of levelObject.hands) {
-        if (rectsOverlap(player, { x: hand.x, y: hand.y, w: hand.w, h: hand.h })) damagePlayer();
-      }
-
-      if (rectsOverlap(player, levelObject.goal)) {
-        if (game.map === 4 && game.level === 20 && levelObject.boss && levelObject.boss.hp > 0) {
-          // boss active
-        } else {
-          progressToNextLevel();
-        }
-      }
-
-      if (player.invuln > 0) player.invuln = Math.max(0, player.invuln - 1);
-      player.usedDoubleJump = false;
-    }
-
-    function update() {
-      if (!game || game.state !== "playing") return;
-      game.timer += 1;
-      reanimateHands();
-      updateFists();
-      updateBoss();
-      updatePlayer();
-    }
-
-    function drawBackground() {
-      const pal = levelObject.palette;
-      const grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grd.addColorStop(0, pal.sky);
-      grd.addColorStop(1, pal.bgDark);
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgba(0,0,0,0.12)";
-      for (let i=0; i<14; i++) {
-        const x = i * 80 + 15;
-        const h = 60 + ((i * 27) % 120);
-        ctx.fillRect(x, 470 - h, 45, h);
+        document.getElementById('fpsOverlay').textContent = `FPS: ${world.fps.toFixed(1)}`;
+      } else {
+        const f = document.getElementById('fpsOverlay');
+        if (f) f.remove();
       }
     }
 
-    function drawPlatforms() {
-      const pal = levelObject.palette;
-      for (const p of levelObject.platforms) {
-        ctx.fillStyle = p.type === "ground" ? pal.ground : pal.platform;
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-      }
+    function resetProgress() {
+      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(SETTINGS_KEY);
+      window.location.reload();
     }
 
-    function drawGoal() {
-      const g = levelObject.goal;
-      ctx.fillStyle = "#ffdb4d";
-      ctx.fillRect(g.x, g.y, g.w, g.h);
-    }
-
-    function drawHands() {
-      for (const hand of levelObject.hands) {
-        ctx.fillStyle = "#d7d7d7";
-        ctx.fillRect(hand.x, hand.y, hand.w, hand.h);
-      }
-    }
-
-    function drawFists() {
-      for (const fist of levelObject.fists) {
-        if (fist.active) {
-          ctx.fillStyle = "#a93d3d";
-          ctx.fillRect(fist.x, fist.y, fist.w, fist.h);
-        }
-      }
-    }
-
-    function drawBoss() {
-      const boss = levelObject.boss;
-      if (!boss) return;
-      ctx.fillStyle = boss.hitFlash > 0 ? "#ff9a9a" : "#f2f2f2";
-      ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
-    }
-
-    function drawPlayer() {
-      if (!player) return;
-      ctx.fillStyle = player.invuln > 0 ? "#fff5b3" : "#4cd3ff";
-      ctx.fillRect(player.x, player.y, player.w, player.h);
-    }
-
-    function draw() {
-      if (!game || !levelObject) return;
-      drawBackground();
-      drawPlatforms();
-      drawGoal();
-      drawHands();
-      drawFists();
-      drawBoss();
-      drawPlayer();
-    }
-
-    function loop(ts) {
-      totalFrames += 1;
-      if (lastTime === 0) lastTime = ts;
-      const delta = ts - lastTime;
-      lastTime = ts;
-      fps = 1000 / Math.max(delta, 16.6);
-
-      if (game && game.state === "playing") update();
-      draw();
-
-      if (settings.showFps) {
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillRect(10, 10, 120, 24);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "16px sans-serif";
-        ctx.fillText(`FPS: ${fps.toFixed(1)}`, 10, 18);
-      }
-
-      requestAnimationFrame(loop);
-    }
-
-    function initGame() {
-      const saved = loadProgress();
-      game = {
-        map:saved.map || 0,
-        level:saved.level || 1,
-        lives:saved.lives || 3,
-        coins:saved.coins || 0,
-        state:"playing",
-        timer:0,
-        difficultyMultiplier:1
-      };
-      applyDifficultyToGame();
-      spawnPlayer();
-      loadLevel();
-      updateHud();
-      saveProgress();
-    }
-
-    function applyCheat(code) {
-      const c = code.trim().toLowerCase();
-      if (c === "1up") {
-        game.lives += 1;
-        updateHud();
-        return;
-      }
-      if (c === "godmode") {
-        settings.cheats.godmode = true;
-        updateHud();
-        return;
-      }
-      if (c === "coins100") {
-        game.coins += 100;
-        updateHud();
-        return;
-      }
-      if (c === "nextlvl") {
-        progressToNextLevel();
-        return;
-      }
-      if (c === "skipmap") {
-        game.map += 1;
-        if (game.map >= MAP_NAMES.length) game.map = 0;
-        game.level = 1;
-        loadLevel();
-        updateHud();
-        return;
-      }
-      if (c === "debug") {
-        settings.debugOverlay = !settings.debugOverlay;
-        document.getElementById("debugBox").style.display = settings.debugOverlay ? "block" : "none";
-        return;
-      }
-      if (c === "allmaps") {
-        game.map = MAP_NAMES.length - 1;
-        game.level = 20;
-        loadLevel();
-        updateHud();
-        return;
-      }
-      if (c === "bosskill") {
-        game.level = 20;
-        game.map = 4;
-        loadLevel();
-        updateHud();
-        return;
-      }
-      alert("Cheat not found: " + code);
-    }
-
-    function populateChangelog() {
-      const changelogEl = document.getElementById("changelog");
-      changelogEl.innerHTML = "";
-      for (const item of [
-        { v:"1.2.0", date:"2026-10-14", notes:"Added settings, versions/updates UI, persistent settings, and cheat codes." },
-        { v:"1.1.0", date:"2026-10-13", notes:"Added crawling hands, fists hazards, boss prototype, and map progression." },
-        { v:"1.0.0", date:"2026-10-10", notes:"Initial playable prototype with movement and level progression." }
-      ]) {
-        const row = document.createElement("div");
-        row.className = "log-entry";
-        row.innerHTML = `<strong>v${item.v}</strong> <em style="opacity:0.8">${item.date}</em><div class="muted">${item.notes}</div>`;
-        changelogEl.appendChild(row);
-      }
-    }
-
-    function renderStoreItems() {
-      let coins = game ? game.coins : 0;
-      document.getElementById("storeCoins").textContent = "Coins: " + coins;
-
-      const items = [
-        { id:"sword", name:"Iron Sword", desc:"Increase attack power.", price:60 },
-        { id:"shield", name:"Guardian Shield", desc:"Reduces damage.", price:80 },
-        { id:"doublejump", name:"Double Jump Boots", desc:"Allows one extra jump.", price:120 },
-        { id:"coinbundle", name:"Small Coin Pack", desc:"50 extra in-game coins.", price:0 }
-      ];
-
-      const list = document.getElementById("itemsList");
-      list.innerHTML = "";
-
-      for (const it of items) {
-        const itemRow = document.createElement("div");
-        itemRow.className = "storeItem";
-        itemRow.innerHTML = `
-          <div class="itemMeta">
-            <div style="width:54px;height:44px;background:rgba(255,255,255,0.03);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#ffd06e">
-              ${it.id.slice(0,2).toUpperCase()}
-            </div>
-            <div>
-              <div style="font-weight:800">${it.name}</div>
-              <div style="font-size:13px;opacity:0.9">${it.desc}</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <div class="price">${it.price > 0 ? it.price + "c" : "—"}</div>
-            <button data-id="${it.id}">Buy</button>
-          </div>
-        `;
-        list.appendChild(itemRow);
-      }
-
-      list.querySelectorAll("button").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const id = btn.getAttribute("data-id");
-          const item = items.find((x) => x.id === id);
-          if (!item) return;
-          if (id === "coinbundle") {
-            game.coins += 50;
-            updateHud();
-            renderStoreItems();
-            return;
-          }
-          if (game.coins < item.price) {
-            alert("Not enough coins.");
-            return;
-          }
-          game.coins -= item.price;
-          if (id === "sword") player.hasSword = true;
-          if (id === "shield") player.hasShield = true;
-          if (id === "doublejump") player.canDoubleJump = true;
-          updateHud();
-          renderStoreItems();
-          alert("Purchased: " + item.name);
-        });
-      });
-    }
-
-    function setupStore() {
-      const storeButton = document.getElementById("storeButton");
-      const storeOverlay = document.getElementById("storeOverlay");
-      const closeStore = document.getElementById("closeStore");
-      const buyCoinsBtn = document.getElementById("buyCoinsBtn");
-      const earnInfoBtn = document.getElementById("earnInfo");
-
-      storeButton.addEventListener("click", () => {
-        renderStoreItems();
-        storeOverlay.style.display = "flex";
-      });
-
-      closeStore.addEventListener("click", () => {
-        storeOverlay.style.display = "none";
-      });
-
-      buyCoinsBtn.addEventListener("click", () => {
-        if (confirm("Buy 100 coins for $2.99 (simulated demo)?")) {
-          game.coins += 100;
-          updateHud();
-          renderStoreItems();
-        }
-      });
-
-      earnInfoBtn.addEventListener("click", () => {
-        alert("Earn 100 coins by completing 3 levels.");
-      });
-    }
-
-    function bindControls() {
-      document.getElementById("leftBtn").addEventListener("click", () => { keys["a"] = true; });
-      document.getElementById("rightBtn").addEventListener("click", () => { keys["d"] = true; });
-      document.getElementById("jumpBtn").addEventListener("click", () => { jump(); });
-      document.getElementById("resetBtn").addEventListener("click", () => { resetRun(); });
-
-      menuBtn.addEventListener("click", () => { panelBackdrop.style.display = "flex"; });
-      closePanel.addEventListener("click", () => { panelBackdrop.style.display = "none"; });
-
-      document.getElementById("difficultySelect").addEventListener("change", (e) => {
-        settings.difficulty = e.target.value;
-        saveSettings();
-        if (game) {
-          applyDifficultyToGame();
-          loadLevel();
-        }
-      });
-
-      document.getElementById("showFps").addEventListener("change", (e) => {
-        settings.showFps = e.target.checked;
-        saveSettings();
-      });
-
-      document.getElementById("debugOverlay").addEventListener("change", (e) => {
-        const box = document.getElementById("debugBox");
-        box.style.display = e.target.checked ? "block" : "none";
-      });
-
-      document.getElementById("resetProgress").addEventListener("click", () => {
-        localStorage.removeItem(SAVE_KEY);
-        localStorage.removeItem(LEVEL_COUNTER_KEY);
-        resetRun();
-      });
-
-      document.getElementById("exportSave").addEventListener("click", () => {
-        const text = JSON.stringify(loadProgress());
-        alert("Save data:\n" + text);
-      });
-
-      document.getElementById("importSave").addEventListener("click", () => {
-        const text = prompt("Paste save data:");
-        if (!text) return;
-        try {
-          const parsed = JSON.parse(text);
-          localStorage.setItem(SAVE_KEY, JSON.stringify(parsed));
-          resetRun();
-        } catch (e) {
-          alert("Import failed.");
-        }
-      });
-
-      document.getElementById("checkUpdates").addEventListener("click", () => {
-        alert("Current version: " + CURRENT_VERSION);
-      });
-
-      document.getElementById("applyCheat").addEventListener("click", () => {
-        const code = document.getElementById("cheatInput").value;
-        applyCheat(code);
-        document.getElementById("cheatInput").value = "";
-      });
-
-      document.getElementById("cheatInput").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          const code = document.getElementById("cheatInput").value;
-          applyCheat(code);
-          document.getElementById("cheatInput").value = "";
-        }
-      });
-
-      document.addEventListener("keydown", (e) => {
-        const k = e.key.toLowerCase();
-        keys[k] = true;
-        if (k === " ") {
+    function bindUI() {
+      window.addEventListener('keydown', (e) => {
+        world.keys[e.code] = true;
+        if (e.code === 'Space') {
           e.preventDefault();
-          jump();
+          tryJump();
         }
       });
+      window.addEventListener('keyup', (e) => {
+        world.keys[e.code] = false;
+      });
 
-      document.addEventListener("keyup", (e) => {
-        const k = e.key.toLowerCase();
-        keys[k] = false;
+      leftBtn.addEventListener('pointerdown', () => { world.keys['KeyA'] = true; });
+      leftBtn.addEventListener('pointerup', () => { world.keys['KeyA'] = false; });
+      leftBtn.addEventListener('pointerleave', () => { world.keys['KeyA'] = false; });
+      rightBtn.addEventListener('pointerdown', () => { world.keys['KeyD'] = true; });
+      rightBtn.addEventListener('pointerup', () => { world.keys['KeyD'] = false; });
+      rightBtn.addEventListener('pointerleave', () => { world.keys['KeyD'] = false; });
+      jumpBtn.addEventListener('click', tryJump);
+      resetBtn.addEventListener('click', () => {
+        player.mesh.position.set(0, 2, 0);
+        player.velocity.set(0, 0, 0);
+      });
+
+      menuBtn.addEventListener('click', () => menuOverlay.style.display = 'flex');
+      closeMenuBtn.addEventListener('click', () => menuOverlay.style.display = 'none');
+      difficultySelect.addEventListener('change', (e) => {
+        world.difficulty = e.target.value;
+        setDifficulty(world.difficulty);
+      });
+      showFpsBox.addEventListener('change', (e) => {
+        world.showFps = e.target.checked;
+        saveSettings();
+      });
+      resetProgressBtn.addEventListener('click', () => {
+        resetProgress();
       });
     }
 
-    function setupStart() {
-      initGame();
-      requestAnimationFrame(loop);
-      populateChangelog();
-      setupStore();
-      bindControls();
-      updateHud();
+    function init() {
+      setDifficulty(world.difficulty);
+      makePlayer();
+      resetWorld();
+      bindUI();
+      animate();
     }
 
-    setupStart();
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    init();
   </script>
 </body>
 </html>
